@@ -43,7 +43,7 @@ export class Proj1 extends DDDSuper(I18NMixin(LitElement)) {
       ...super.properties,
       title: { type: String },
       siteUrl: { type: String },
-      siteData: { type: Object };
+      siteData: { type: Object },
     };
   }
 
@@ -61,6 +61,19 @@ export class Proj1 extends DDDSuper(I18NMixin(LitElement)) {
         margin: var(--ddd-spacing-2);
         padding: var(--ddd-spacing-4);
       }
+      .cards {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
+        }
+      .card {
+        border: 1px solid #b4c6db;
+        padding: 16px;
+        width: 10px;
+        box-sizing: border-box;
+        background: skyblue;
+        border-radius: 5px;
+        }
       h3 span {
         font-size: var(--proj-1-label-font-size, var(--ddd-font-size-s));
       }
