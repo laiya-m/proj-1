@@ -1,101 +1,138 @@
-/**
- * Copyright 2024 laiya-m
- * @license Apache-2.0, see LICENSE for full text.
- */
 import { LitElement, html, css } from "lit";
-import { DDDSuper } from "@haxtheweb/d-d-d/d-d-d.js";
-import { I18NMixin } from "@haxtheweb/i18n-manager/lib/I18NMixin.js";
+import "./hax-search.js";
+import "./hax-card.js";
 
-/**
- * `proj-1`
- * 
- * @demo index.html
- * @element proj-1
- */
-export class Proj1 extends DDDSuper(I18NMixin(LitElement)) {
-
+export class Proj1 extends LitElement {
   static get tag() {
     return "proj-1";
   }
 
   constructor() {
     super();
-    this.siteUrl = '';
-    this.siteData = null; 
-    this.title = "Analyze Your Site!";
-    this.t = this.t || {};
-    this.t = {
-      ...this.t,
-      title: "Title",
-    };
-    this.registerLocalization({
-      context: this,
-      localesPath:
-        new URL("./locales/proj-1.ar.json", import.meta.url).href +
-        "/../",
-      locales: ["ar", "es", "hi", "zh"],
-    });
+    this.siteData = null;
+    this.error = null;
+    this.filterQuery ="";
   }
 
-  // Lit reactive properties
   static get properties() {
     return {
-      ...super.properties,
-      title: { type: String },
-      siteUrl: { type: String },
       siteData: { type: Object },
+      error: { type: String },
+      filterQuery: { type: String},
     };
   }
 
-  // Lit scoped styles
   static get styles() {
-    return [super.styles,
-    css`
+    return css`
       :host {
         display: block;
-        color: var(--ddd-theme-primary);
-        background-color: var(--ddd-theme-accent);
-        font-family: var(--ddd-font-navigation);
+        font-family: Courier;
+        padding: 16px;
       }
-      .wrapper {
-        margin: var(--ddd-spacing-2);
-        padding: var(--ddd-spacing-4);
+      h1 {
+        text-align: center;
+        font-size: 2rem;
+        margin-bottom: 20px;
+      }
+      .error {
+        color: red;
+        text-align: center;
+        margin: 20px 0;
       }
       .cards {
         display: flex;
         flex-wrap: wrap;
-        gap: 10px;
-        }
-      .card {
-        border: 1px solid #b4c6db;
-        padding: 16px;
-        width: 10px;
-        box-sizing: border-box;
-        background: skyblue;
-        border-radius: 5px;
-        }
-      h3 span {
-        font-size: var(--proj-1-label-font-size, var(--ddd-font-size-s));
+        gap: 20px;
+        justify-content: center;
       }
-    `];
+      .filter-search-bar {
+        text-align: center;
+        margin: 20px 0;
+      }
+      .filter-search-bar input {
+        width: 60%;
+        max-width: 400px;
+        padding: 10px;
+        font-size: 1rem;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+    `;
   }
 
-  // Lit render the HTML
+  async fetchSiteData(url) {
+    try {
+      if (!url.endsWith("/site.json")) {
+        url += "/site.json";
+      }
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error("Failed to fetch data. Please check the URL.");
+      }
+      const data = await response.json();
+      this.validateSiteData(data);
+      this.siteData = data;
+      this.baseUrl = url.replace("/site.json", "");
+      this.error = null;
+    } catch (error) {
+      this.siteData = null;
+      this.error = error.message;
+    }
+  }
+
+  validateSiteData(data) {
+    if (!data || !data.items) {
+      throw new Error("Invalid site.json structure.");
+    }
+  }
+  updateFilterQuery(e) {
+    this.filterQuery = e.target.value.toLowerCase(); // Update filter query dynamically
+  }
+
+  getFilteredCards() {
+    if (!this.siteData || !this.siteData.items) return [];
+    return this.siteData.items.filter(
+      (item) =>
+        item.title.toLowerCase().includes(this.filterQuery) ||
+        (item.description || "").toLowerCase().includes(this.filterQuery)
+    );
+  }
+  renderCards() {
+    const items = this.getFilteredCards();
+    if (items.length === 0) {
+      return html`<p>No matching pages found.</p>`;
+    }
+    return items.map(
+      (item) =>
+        html`<hax-card
+          .title="${item.title}"
+          .description="${item.description || "No description available."}"
+          .link="${item.slug}"
+        ></hax-card>`
+    );
+  }
+
   render() {
     return html`
-<div class="wrapper">
-  <h3><span>${this.t.title}:</span> ${this.title}</h3>
-  <slot></slot>
-</div>`;
-  }
-
-  /**
-   * haxProperties integration via file reference
-   */
-  static get haxProperties() {
-    return new URL(`./lib/${this.tag}.haxProperties.json`, import.meta.url)
-      .href;
+      <h1>Analyze Your Site</h1>
+      <hax-search
+        @analyze-site="${(e) => this.fetchSiteData(e.detail)}"
+      ></hax-search>
+      ${this.siteData
+        ? html`
+            <div class="filter-search-bar">
+              <input
+                type="text"
+                placeholder="Search through pages..."
+                @input="${this.updateFilterQuery}"
+              />
+            </div>
+          `
+        : ""}
+      ${this.error
+        ? html`<p class="error">${this.error}</p>`
+        : html`<div class="cards">${this.renderCards()}</div>`}
+    `;
   }
 }
 
-globalThis.customElements.define(Proj1.tag, Proj1);
+customElements.define(Proj1.tag, Proj1);
