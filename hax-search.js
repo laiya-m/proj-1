@@ -17,6 +17,8 @@ export class HaxSearch extends LitElement {
         text-align: center;
         margin-bottom: 20px;
       }
+
+
       input {
         width: 60%;
         max-width: 400px;
@@ -54,19 +56,24 @@ export class HaxSearch extends LitElement {
       </div>
     `;
   }
-
+//this below prepends the https:// so that the user can type it or not 
   _handleAnalyze() {
-    if (this.siteUrl.trim() === "") {
+    let url = this.siteUrl.trim();
+    if (!url.startsWith("http://") && !url.startsWith("https://")) {
+      url = `https://${url}`; 
+    }
+  
+    if (url === "https://") {
       alert("Please enter a valid site URL.");
       return;
     }
     this.dispatchEvent(
-      new CustomEvent("analyze-site", {
-        detail: this.siteUrl,
-        bubbles: true,
-        composed: true,
-      })
-    );
+        new CustomEvent("analyze-site", {
+          detail: url,
+          bubbles: true,
+          composed: true,
+        })
+      );
   }
 }
 
